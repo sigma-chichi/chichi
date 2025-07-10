@@ -1006,31 +1006,14 @@
                         <input type="password" id="login-password" name="password" required placeholder="Ваш пароль">
                     </div>
                     
-                    <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; align-items: center;">
-                            <input type="checkbox" id="remember-me" name="remember-me" style="width: auto; margin-right: 10px;">
-                            <label for="remember-me">Запомнить меня</label>
-                        </div>
-                        <a href="#" onclick="showPasswordRecovery(); return false;" style="color: var(--secondary); font-weight: 600;">Забыли пароль?</a>
+                    <div class="form-group" style="display: flex; align-items: center;">
+                        <input type="checkbox" id="remember-me" name="remember-me" style="width: auto; margin-right: 10px;">
+                        <label for="remember-me">Запомнить меня</label>
                     </div>
                     
                     <button type="submit" class="btn btn-primary" style="width: 100%;">
                         <i class="fas fa-sign-in-alt"></i> Войти
                     </button>
-                    
-                    <div style="text-align: center; margin: 20px 0; position: relative;">
-                        <div style="height: 1px; background: #ddd; position: absolute; top: 50%; left: 0; right: 0;"></div>
-                        <span style="background: white; padding: 0 15px; position: relative; color: var(--gray);">или войдите через</span>
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <button type="button" class="btn" style="flex: 1; background: #DB4437; color: white;" onclick="showSocialLogin('google')">
-                            <i class="fab fa-google"></i> Google
-                        </button>
-                        <button type="button" class="btn" style="flex: 1; background: #3B5998; color: white;" onclick="showSocialLogin('facebook')">
-                            <i class="fab fa-facebook-f"></i> Facebook
-                        </button>
-                    </div>
                     
                     <p style="text-align: center; margin-top: 20px;">
                         Нет аккаунта? <a href="#" onclick="showPage('register'); return false;" style="color: var(--secondary); font-weight: 600;">Зарегистрируйтесь</a>
@@ -1098,25 +1081,6 @@
                 <img src="https://media.tenor.com/8H1dSd9vK4gAAAAd/here-point-there.gif" alt="Telegram GIF" class="telegram-gif">
                 <p style="text-align: center; font-style: italic;">Чичи указывает - подписывайся скорее!</p>
             </div>
-        </div>
-    </div>
-
-    <!-- Модальное окно восстановления пароля -->
-    <div class="modal" id="passwordRecoveryModal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closePasswordRecovery()">&times;</span>
-            <h2 style="color: var(--dark); margin-bottom: 20px;">Восстановление пароля</h2>
-            
-            <p>Введите email, указанный при регистрации, и мы вышлем вам инструкции по восстановлению пароля.</p>
-            
-            <div class="form-group" style="margin-top: 20px;">
-                <label for="recovery-email"><i class="fas fa-envelope"></i> Ваш email</label>
-                <input type="email" id="recovery-email" name="email" required placeholder="Ваш email">
-            </div>
-            
-            <button class="btn" style="width: 100%; margin-top: 20px;" onclick="sendRecoveryEmail()">
-                <i class="fas fa-paper-plane"></i> Отправить инструкции
-            </button>
         </div>
     </div>
 
@@ -1255,41 +1219,11 @@
             document.getElementById('rulesModal').style.display = 'none';
         }
         
-        // Восстановление пароля
-        function showPasswordRecovery() {
-            document.getElementById('passwordRecoveryModal').style.display = 'flex';
-        }
-        
-        function closePasswordRecovery() {
-            document.getElementById('passwordRecoveryModal').style.display = 'none';
-        }
-        
-        function sendRecoveryEmail() {
-            const email = document.getElementById('recovery-email').value;
-            if (!email) {
-                alert('Пожалуйста, введите ваш email');
-                return;
-            }
-            
-            alert(`Инструкции по восстановлению пароля отправлены на ${email}`);
-            closePasswordRecovery();
-        }
-        
-        // Социальные сети
-        function showSocialLogin(provider) {
-            alert(`Вход через ${provider} в настоящее время недоступен. Пожалуйста, используйте стандартную форму входа.`);
-        }
-        
-        // Закрытие модальных окон при клике вне их
+        // Закрытие модального окна при клике вне его
         window.addEventListener('click', function(event) {
             const rulesModal = document.getElementById('rulesModal');
             if (event.target === rulesModal) {
                 closeRulesModal();
-            }
-            
-            const recoveryModal = document.getElementById('passwordRecoveryModal');
-            if (event.target === recoveryModal) {
-                closePasswordRecovery();
             }
         });
         
