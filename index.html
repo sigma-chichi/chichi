@@ -642,7 +642,7 @@
         
         /* Стили для чата */
         .chat-container {
-            height: 400px;
+            height: 500px;
             display: flex;
             flex-direction: column;
             background: white;
@@ -743,6 +743,102 @@
             color: #6c757d;
         }
         
+        /* Добавляем стили для мобильного управления */
+        #mobile-controls {
+            display: none;
+            position: relative;
+            margin-top: 20px;
+            touch-action: manipulation;
+        }
+        
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .mobile-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            touch-action: manipulation;
+            user-select: none;
+        }
+        
+        .mobile-btn:active {
+            transform: scale(0.95);
+            background: var(--dark);
+        }
+        
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 5px;
+            width: 140px;
+            height: 140px;
+        }
+        
+        .dpad-btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        
+        .dpad-btn.up {
+            grid-column: 2;
+            grid-row: 1;
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .dpad-btn.left {
+            grid-column: 1;
+            grid-row: 2;
+            border-radius: 10px 0 0 10px;
+        }
+        
+        .dpad-btn.right {
+            grid-column: 3;
+            grid-row: 2;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .dpad-btn.down {
+            grid-column: 2;
+            grid-row: 3;
+            border-radius: 0 0 10px 10px;
+        }
+        
+        .dpad-btn.center {
+            grid-column: 2;
+            grid-row: 2;
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* Добавляем стили для свайпа */
+        #swipe-area {
+            display: none;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            z-index: 10;
+            touch-action: manipulation;
+        }
+        
         /* Стили для адаптивности */
         @media (max-width: 768px) {
             .menu-toggle {
@@ -801,6 +897,29 @@
             .avatar-option {
                 width: 80px;
                 height: 80px;
+            }
+            
+            #mobile-controls {
+                display: block;
+            }
+            
+            #swipe-area {
+                display: block;
+            }
+            
+            .game-controls {
+                flex-wrap: wrap;
+            }
+            
+            .game-stats {
+                order: 2;
+                width: 100%;
+                justify-content: center;
+                margin-top: 15px;
+            }
+            
+            #startGameBtn {
+                order: 1;
             }
         }
     </style>
@@ -1235,7 +1354,26 @@
                 <h2 class="game-title"><i class="fas fa-gamepad"></i> Игра</h2>
                 <div class="game-canvas-container">
                     <canvas id="gameCanvas" width="800" height="500"></canvas>
+                    <div id="swipe-area"></div>
                 </div>
+                
+                <!-- Добавляем кнопки для мобильного управления -->
+                <div id="mobile-controls">
+                    <div class="control-row">
+                        <button id="left-btn" class="mobile-btn"><i class="fas fa-arrow-left"></i></button>
+                        <button id="jump-btn" class="mobile-btn"><i class="fas fa-arrow-up"></i></button>
+                        <button id="right-btn" class="mobile-btn"><i class="fas fa-arrow-right"></i></button>
+                    </div>
+                    
+                    <div class="dpad">
+                        <button class="dpad-btn up" id="dpad-up"><i class="fas fa-arrow-up"></i></button>
+                        <button class="dpad-btn left" id="dpad-left"><i class="fas fa-arrow-left"></i></button>
+                        <button class="dpad-btn center"></button>
+                        <button class="dpad-btn right" id="dpad-right"><i class="fas fa-arrow-right"></i></button>
+                        <button class="dpad-btn down" id="dpad-down"><i class="fas fa-arrow-down"></i></button>
+                    </div>
+                </div>
+                
                 <div class="game-controls">
                     <div class="game-stats">
                         <span id="score">Семечки: 0</span>
@@ -1247,8 +1385,8 @@
                 <div class="game-instructions">
                     <h3><i class="fas fa-info-circle"></i> Как играть?</h3>
                     <ul>
-                        <li>Используйте клавиши <strong>←</strong> и <strong>→</strong> для перемещения Чичи</li>
-                        <li>Нажимайте <strong>Пробел</strong> или <strong>↑</strong>, чтобы прыгать</li>
+                        <li>На ПК: ← → для движения, Пробел/↑ для прыжка</li>
+                        <li>На телефоне: используйте кнопки или свайп</li>
                         <li>Собирайте обычные семечки (1 очко)</li>
                         <li>Золотые семечки (5 очков) скачивают файл с вкусняшкой для Чичи!</li>
                         <li>Старайтесь собрать как можно больше за 60 секунд!</li>
@@ -1272,7 +1410,7 @@
                         </div>
                     </div>
                     <div class="chat-info">
-                        Попробуйте спросить: как дела? что посоветуешь? чем кормить? как играть?
+                        Попробуйте спросить: как дела? что посоветуешь? чем кормить? как играть? сколько тебе лет? кто твой хозяин?
                     </div>
                     <div class="chat-input-container">
                         <input type="text" id="chatInput" placeholder="Напишите вопрос для Чичи...">
@@ -1503,7 +1641,7 @@
             showPage(page);
         });
         
-        // ================== ИГРА С ЗОЛОТОЙ СЕМЕЧКОЙ ==================
+        // ================== ИГРА С ЗОЛОТОЙ СЕМЕЧКОЙ И МОБИЛЬНЫМ УПРАВЛЕНИЕМ ==================
         function initGame() {
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
@@ -1558,7 +1696,7 @@
                 up: false
             };
             
-            // Обработчики клавиш
+            // Обработчики клавиш для ПК
             window.addEventListener('keydown', function(e) {
                 if (e.key === 'ArrowLeft') keys.left = true;
                 if (e.key === 'ArrowRight') keys.right = true;
@@ -1570,6 +1708,148 @@
                 if (e.key === 'ArrowRight') keys.right = false;
                 if (e.key === 'ArrowUp' || e.key === ' ') keys.up = false;
             });
+            
+            // ================== МОБИЛЬНОЕ УПРАВЛЕНИЕ ==================
+            
+            // Элементы управления
+            const leftBtn = document.getElementById('left-btn');
+            const rightBtn = document.getElementById('right-btn');
+            const jumpBtn = document.getElementById('jump-btn');
+            const dpadLeft = document.getElementById('dpad-left');
+            const dpadRight = document.getElementById('dpad-right');
+            const dpadUp = document.getElementById('dpad-up');
+            const dpadDown = document.getElementById('dpad-down');
+            const swipeArea = document.getElementById('swipe-area');
+            
+            // Обработчики для кнопок
+            if (leftBtn) {
+                leftBtn.addEventListener('touchstart', function(e) {
+                    keys.left = true;
+                    e.preventDefault();
+                });
+                
+                leftBtn.addEventListener('touchend', function(e) {
+                    keys.left = false;
+                    e.preventDefault();
+                });
+            }
+            
+            if (rightBtn) {
+                rightBtn.addEventListener('touchstart', function(e) {
+                    keys.right = true;
+                    e.preventDefault();
+                });
+                
+                rightBtn.addEventListener('touchend', function(e) {
+                    keys.right = false;
+                    e.preventDefault();
+                });
+            }
+            
+            if (jumpBtn) {
+                jumpBtn.addEventListener('touchstart', function(e) {
+                    if (!chichi.jumping) {
+                        keys.up = true;
+                    }
+                    e.preventDefault();
+                });
+                
+                jumpBtn.addEventListener('touchend', function(e) {
+                    keys.up = false;
+                    e.preventDefault();
+                });
+            }
+            
+            // Обработчики для D-pad
+            if (dpadLeft) {
+                dpadLeft.addEventListener('touchstart', function(e) {
+                    keys.left = true;
+                    e.preventDefault();
+                });
+                
+                dpadLeft.addEventListener('touchend', function(e) {
+                    keys.left = false;
+                    e.preventDefault();
+                });
+            }
+            
+            if (dpadRight) {
+                dpadRight.addEventListener('touchstart', function(e) {
+                    keys.right = true;
+                    e.preventDefault();
+                });
+                
+                dpadRight.addEventListener('touchend', function(e) {
+                    keys.right = false;
+                    e.preventDefault();
+                });
+            }
+            
+            if (dpadUp) {
+                dpadUp.addEventListener('touchstart', function(e) {
+                    if (!chichi.jumping) {
+                        keys.up = true;
+                    }
+                    e.preventDefault();
+                });
+                
+                dpadUp.addEventListener('touchend', function(e) {
+                    keys.up = false;
+                    e.preventDefault();
+                });
+            }
+            
+            // Обработчик свайпов
+            let touchStartX = 0;
+            let touchStartY = 0;
+            
+            swipeArea.addEventListener('touchstart', function(e) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+                e.preventDefault();
+            });
+            
+            swipeArea.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+            });
+            
+            swipeArea.addEventListener('touchend', function(e) {
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+                
+                const diffX = touchEndX - touchStartX;
+                const diffY = touchEndY - touchStartY;
+                
+                // Определяем направление свайпа
+                if (Math.abs(diffX) > Math.abs(diffY)) {
+                    // Горизонтальный свайп
+                    if (diffX > 50) {
+                        // Свайп вправо
+                        keys.right = true;
+                        setTimeout(() => keys.right = false, 300);
+                    } else if (diffX < -50) {
+                        // Свайп влево
+                        keys.left = true;
+                        setTimeout(() => keys.left = false, 300);
+                    }
+                } else {
+                    // Вертикальный свайп
+                    if (diffY < -50 && !chichi.jumping) {
+                        // Свайп вверх (прыжок)
+                        keys.up = true;
+                        setTimeout(() => keys.up = false, 100);
+                    }
+                }
+                
+                e.preventDefault();
+            });
+            
+            // Предотвращаем стандартное поведение касаний
+            document.addEventListener('touchmove', function(e) {
+                if (e.target.closest('#mobile-controls') || e.target === swipeArea) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
             
             // Функция для скачивания файла с вкусняшкой
             function downloadTreat() {
@@ -1769,7 +2049,7 @@
             startBtn.addEventListener('click', startGame);
         }
         
-        // ================== УМНЫЙ ЧАТ С ЧИЧИ ==================
+        // ================== УМНЫЙ ЧАТ С ЧИЧИ (РАСШИРЕННЫЙ) ==================
         function initChat() {
             const chatMessages = document.getElementById('chatMessages');
             const chatInput = document.getElementById('chatInput');
@@ -1796,7 +2076,7 @@
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             };
 
-            // Обработка вопросов для Чичи
+            // Обработка вопросов для Чичи (расширенная версия)
             function processQuestion(question) {
                 const lowerQ = question.toLowerCase();
                 
@@ -1824,38 +2104,87 @@
                 if (lowerQ.includes('чем кормить') || lowerQ.includes('что ест') || 
                     lowerQ.includes('питание') || lowerQ.includes('корм') || 
                     lowerQ.includes('еда') || lowerQ.includes('кушать')) {
-                    return "Я обожаю:\n- Рис\n- Вареные яйца\n- Семена подсолнечника (не жареные!)\n- Овес\n- Бамбуковые зубочистки\n- Свежие овощи";
+                    return "Я обожаю:\n- Рис\n- Вареные яйца\n- Семена подсолнечника (не жареные!)\n- Овес\n- Бамбуковые зубочистки\n- Свежие овощи\nА вот шоколад, авокадо и лук нам вредны!";
                 }
                 
                 // Вопросы об уходе
                 if (lowerQ.includes('уход') || lowerQ.includes('забо') || 
                     lowerQ.includes('содержан') || lowerQ.includes('убирать')) {
-                    return "Важные правила ухода:\n1. Чистая вода каждый день\n2. Регулярная уборка клетки\n3. Общение 2-3 часа в день\n4. Возможность летать\n5. Игрушки для развлечения";
+                    return "Важные правила ухода:\n1. Чистая вода каждый день\n2. Регулярная уборка клетки\n3. Общение 2-3 часа в день\n4. Возможность летать\n5. Игрушки для развлечения\n6. Осмотр ветеринара раз в год";
                 }
                 
                 // Вопросы об игре
                 if (lowerQ.includes('игра') || lowerQ.includes('игре') || 
                     lowerQ.includes('управлен') || lowerQ.includes('правила') || 
-                    lowerQ.includes('как играть')) {
-                    return "В моей игре:\n← → - двигаться\nПробел или ↑ - прыгать\nСобирай семечки (1 очко)\nЗолотые семечки (5 очков) дарят мне вкусняшку!";
+                    lowerQ.includes('как играть') || lowerQ.includes('игр')) {
+                    return "В моей игре:\n← → - двигаться\nПробел или ↑ - прыгать\nСобирай семечки (1 очко)\nЗолотые семечки (5 очков) дарят мне вкусняшку!\nСтарайся побить рекорд!";
                 }
                 
                 // Вопросы о характере
                 if (lowerQ.includes('характер') || lowerQ.includes('нрав') || 
-                    lowerQ.includes('личность')) {
-                    return "Я немного капризный, но очень добрый! Люблю сидеть на руке и наблюдать за происходящим. Не люблю, когда меня беспокоят во время еды или сна.";
+                    lowerQ.includes('личность') || lowerQ.includes('какой ты')) {
+                    return "Я немного капризный, но очень добрый! Люблю сидеть на руке и наблюдать за происходящим. Не люблю, когда меня беспокоят во время еды или сна. А еще я очень любопытный!";
                 }
                 
                 // Вопросы о любимых занятиях
                 if (lowerQ.includes('чем занимаешься') || lowerQ.includes('любишь делать') || 
-                    lowerQ.includes('хобби') || lowerQ.includes('занят')) {
-                    return "Мои любимые занятия:\n1. Строить гнездо из веточек\n2. Смотреть в окно\n3. Пробовать новые вкусняшки\n4. Пугать кота (но только немного!)\n5. Играть с хозяином";
+                    lowerQ.includes('хобби') || lowerQ.includes('занят') || 
+                    lowerQ.includes('что любишь')) {
+                    return "Мои любимые занятия:\n1. Строить гнездо из веточек\n2. Смотреть в окно\n3. Пробовать новые вкусняшки\n4. Пугать кота (но только немного!)\n5. Играть с хозяином\n6. Купаться в водичке";
+                }
+                
+                // Вопросы о возрасте
+                if (lowerQ.includes('сколько тебе лет') || lowerQ.includes('возраст') || 
+                    lowerQ.includes('как долго живёшь')) {
+                    return "Я родился в марте 2025 года, так что мне всего несколько месяцев! Кореллы живут 15-20 лет, так что у нас с тобой ещё много времени!";
+                }
+                
+                // Вопросы о хозяине
+                if (lowerQ.includes('кто твой хозяин') || lowerQ.includes('кто твой владелец') || 
+                    lowerQ.includes('кто за тобой ухаживает')) {
+                    return "Мой любимый хозяин - замечательный человек, который заботится обо мне! Он покупает мне вкусняшки, играет со мной и строит уютные гнёзда. Я его очень люблю!";
+                }
+                
+                // Вопросы о коте
+                if (lowerQ.includes('кот') || lowerQ.includes('кошка') || 
+                    lowerQ.includes('животные')) {
+                    return "У нас дома живет кот, но я его не боюсь! На самом деле, это он меня боится! Я показываю ему, кто в доме главный, и он уважает моё пространство.";
+                }
+                
+                // Вопросы о пении
+                if (lowerQ.includes('поёшь') || lowerQ.includes('петь') || 
+                    lowerQ.includes('голос') || lowerQ.includes('чирикать')) {
+                    return "Я люблю чирикать по утрам и вечерам! Особенно когда вижу солнышко или слышу красивую музыку. Мои любимые песни - весёлые и жизнерадостные!";
+                }
+                
+                // Вопросы о сне
+                if (lowerQ.includes('спишь') || lowerQ.includes('сон') || 
+                    lowerQ.includes('когда спишь')) {
+                    return "Я сплю ночью, как и все порядочные птицы! Мне нравится, когда накрывают клетку тканью - так темно и уютно. А просыпаюсь я с первыми лучами солнца!";
+                }
+                
+                // Вопросы о полётах
+                if (lowerQ.includes('летать') || lowerQ.includes('полёты') || 
+                    lowerQ.includes('крылья')) {
+                    return "Обожаю летать! Хотя в квартире не очень много места, я люблю делать круги по комнате. Это так здорово - чувствовать воздух под крыльями!";
+                }
+                
+                // Вопросы о здоровье
+                if (lowerQ.includes('здоров') || lowerQ.includes('боле') || 
+                    lowerQ.includes('ветеринар')) {
+                    return "Я здоровый и активный попугай! Хозяин регулярно возит меня к ветеринару-орнитологу для осмотра. Главное - правильное питание и гигиена!";
                 }
                 
                 // Прощания
                 if (lowerQ.includes('пока') || lowerQ.includes('до свидания') || 
-                    lowerQ.includes('прощай') || lowerQ.includes('bye')) {
+                    lowerQ.includes('прощай') || lowerQ.includes('bye') ||
+                    lowerQ.includes('до встречи')) {
                     return "Пока! Возвращайся скорее поиграть со мной! Буду скучать!";
+                }
+                
+                // Благодарности
+                if (lowerQ.includes('спасибо') || lowerQ.includes('благодарю')) {
+                    return "Пожалуйста! Всегда рад помочь! Заходи ещё, поиграем и поболтаем!";
                 }
                 
                 // Общие позитивные фразы
@@ -1875,7 +2204,17 @@
                     "Знаешь, у меня сегодня отличный день!",
                     "Лучший совет - подпишись на мой Телеграм канал!",
                     "Ух ты! Интересный вопрос! Но я пока не знаю ответа...",
-                    "Чирикаю тебе в ответ - приятного дня!"
+                    "Чирикаю тебе в ответ - приятного дня!",
+                    "А ты знал, что кореллы могут жить до 20 лет?",
+                    "Моя любимая игрушка - бамбуковая зубочистка!",
+                    "Сегодня я видел за окном интересную птичку!",
+                    "Хочешь, покажу тебе мои лучшие трюки?",
+                    "Я только что собрал 30 семечек в игре! А ты?",
+                    "Лучший подарок для меня - новая веточка для гнезда!",
+                    "Когда я счастлив, я расправляю хохолок!",
+                    "Знаешь, я очень умный попугай!",
+                    "Мой хозяин говорит, что я самый красивый корелла!",
+                    "Чирик! Надо бы слетать за семечкой!"
                 ];
                 
                 return randomResponses[Math.floor(Math.random() * randomResponses.length)];
