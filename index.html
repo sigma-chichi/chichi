@@ -552,8 +552,7 @@
         
         .game-container {
             display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
+            flex-direction: column;
             margin-top: 20px;
         }
         
@@ -564,6 +563,7 @@
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
         
         .game-title {
@@ -642,7 +642,7 @@
         
         /* Стили для чата */
         .chat-container {
-            height: 500px;
+            height: 400px;
             display: flex;
             flex-direction: column;
             background: white;
@@ -801,10 +801,6 @@
             .avatar-option {
                 width: 80px;
                 height: 80px;
-            }
-            
-            .game-container {
-                flex-direction: column;
             }
         }
     </style>
@@ -1244,25 +1240,27 @@
                     <div class="game-stats">
                         <span id="score">Семечки: 0</span>
                         <span id="timer">Время: 60</span>
+                        <span id="gold-counter">Золотые: 0</span>
                     </div>
                     <button id="startGameBtn" class="btn btn-secondary">Начать игру</button>
                 </div>
                 <div class="game-instructions">
                     <h3><i class="fas fa-info-circle"></i> Как играть?</h3>
                     <ul>
-                        <li>Используйте клавиши <strong>←</strong> и <strong>→</strong> для перемещения Чичи влево и вправо</li>
+                        <li>Используйте клавиши <strong>←</strong> и <strong>→</strong> для перемещения Чичи</li>
                         <li>Нажимайте <strong>Пробел</strong> или <strong>↑</strong>, чтобы прыгать</li>
-                        <li>Собирайте семечки, пролетая через них</li>
-                        <li>Старайтесь собрать как можно больше семечек за 60 секунд!</li>
+                        <li>Собирайте обычные семечки (1 очко)</li>
+                        <li>Золотые семечки (5 очков) скачивают файл с вкусняшкой для Чичи!</li>
+                        <li>Старайтесь собрать как можно больше за 60 секунд!</li>
                     </ul>
                 </div>
             </div>
             
             <div class="game-section">
-                <h2 class="game-title"><i class="fas fa-comments"></i> Чат игроков</h2>
+                <h2 class="game-title"><i class="fas fa-comments"></i> Чат Чичи</h2>
                 <div class="chat-container">
                     <div class="chat-header">
-                        <i class="fas fa-feather"></i> Общайтесь с другими любителями Чичи!
+                        <i class="fas fa-feather"></i> Спросите что-нибудь у Чичи!
                     </div>
                     <div class="chat-messages" id="chatMessages">
                         <div class="message received">
@@ -1270,28 +1268,14 @@
                                 <span class="sender">Чичи</span>
                                 <span class="time">10:30</span>
                             </div>
-                            <div class="message-content">Привет! Спасибо, что играете в мою игру! Кто набрал больше всех семечек?</div>
-                        </div>
-                        <div class="message sent">
-                            <div class="message-header">
-                                <span class="sender">Вы</span>
-                                <span class="time">10:31</span>
-                            </div>
-                            <div class="message-content">Пока только начинаю, но игра отличная!</div>
-                        </div>
-                        <div class="message received">
-                            <div class="message-header">
-                                <span class="sender">Птицевод</span>
-                                <span class="time">10:32</span>
-                            </div>
-                            <div class="message-content">Мой рекорд - 45 семечек! Чичи - лучшая птичка!</div>
+                            <div class="message-content">Привет! Я Чичи - самый милый корелла! Задай мне вопрос, например: "Как дела?" или "Что посоветуешь?"</div>
                         </div>
                     </div>
                     <div class="chat-info">
-                        Чат поддерживает до 1000 сообщений. Будьте вежливы!
+                        Попробуйте спросить: как дела? что посоветуешь? чем кормить? как играть?
                     </div>
                     <div class="chat-input-container">
-                        <input type="text" id="chatInput" placeholder="Напишите сообщение...">
+                        <input type="text" id="chatInput" placeholder="Напишите вопрос для Чичи...">
                         <button id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </div>
@@ -1386,6 +1370,7 @@
             // Если открыта страница игры, инициализировать ее
             if (pageId === 'game') {
                 initGame();
+                initChat();
             }
         }
         
@@ -1518,13 +1503,14 @@
             showPage(page);
         });
         
-        // Инициализация игры
+        // ================== ИГРА С ЗОЛОТОЙ СЕМЕЧКОЙ ==================
         function initGame() {
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
             const startBtn = document.getElementById('startGameBtn');
             const scoreElement = document.getElementById('score');
             const timerElement = document.getElementById('timer');
+            const goldCounterElement = document.getElementById('gold-counter');
             
             // Размеры холста
             const width = canvas.width;
@@ -1537,9 +1523,14 @@
             const seedImg = new Image();
             seedImg.src = 'https://i.postimg.cc/nLxvWqGr/2025-08-10-184656.png';
             
+            // Золотая семечка
+            const goldSeedImg = new Image();
+            goldSeedImg.src = 'https://i.postimg.cc/k4Nww8YF/2025-08-10-211147.png';
+            
             // Переменные игры
             let gameActive = false;
             let score = 0;
+            let goldSeedsCollected = 0;
             let timeLeft = 60;
             let timer;
             
@@ -1558,6 +1549,7 @@
             
             // Семечки
             let seeds = [];
+            let goldSeeds = [];
             
             // Клавиши управления
             let keys = {
@@ -1579,16 +1571,35 @@
                 if (e.key === 'ArrowUp' || e.key === ' ') keys.up = false;
             });
             
+            // Функция для скачивания файла с вкусняшкой
+            function downloadTreat() {
+                const content = "Чичи получает вкусняшку в реальной жизни!\n\nСпасибо за игру! Ваша поддержка помогает покупать лучшие лакомства для Чичи.\n\nПокажите этот файл хозяину Чичи для получения реального угощения!";
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Вкусняшка_для_Чичи.txt';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 0);
+            }
+            
             // Функция запуска игры
             function startGame() {
                 if (gameActive) return;
                 
                 gameActive = true;
                 score = 0;
+                goldSeedsCollected = 0;
                 timeLeft = 60;
                 seeds = [];
+                goldSeeds = [];
                 scoreElement.textContent = `Семечки: ${score}`;
                 timerElement.textContent = `Время: ${timeLeft}`;
+                goldCounterElement.textContent = `Золотые: ${goldSeedsCollected}`;
                 
                 // Очистка предыдущего таймера
                 if (timer) clearInterval(timer);
@@ -1614,7 +1625,7 @@
                 
                 // Отображение результатов
                 setTimeout(() => {
-                    alert(`Игра окончена!\nВы собрали ${score} семечек.`);
+                    alert(`Игра окончена!\nВы собрали ${score} семечек (${goldSeedsCollected} золотых).`);
                 }, 500);
             }
             
@@ -1669,7 +1680,7 @@
                 // Рисуем Чичи
                 ctx.drawImage(chichiImg, chichi.x, chichi.y, chichi.width, chichi.height);
                 
-                // Генерация семечек
+                // Генерация обычных семечек
                 if (Math.random() < 0.03) {
                     seeds.push({
                         x: Math.random() * (width - 30),
@@ -1680,7 +1691,19 @@
                     });
                 }
                 
-                // Обновление и отрисовка семечек
+                // Генерация золотых семечек (очень редко)
+                if (Math.random() < 0.005) {
+                    goldSeeds.push({
+                        x: Math.random() * (width - 30),
+                        y: -30,
+                        width: 30,
+                        height: 30,
+                        speed: 4 + Math.random() * 2,
+                        blinkTimer: 0
+                    });
+                }
+                
+                // Обновление и отрисовка обычных семечек
                 for (let i = seeds.length - 1; i >= 0; i--) {
                     const seed = seeds[i];
                     seed.y += seed.speed;
@@ -1705,6 +1728,39 @@
                     }
                 }
                 
+                // Обновление и отрисовка золотых семечек
+                for (let i = goldSeeds.length - 1; i >= 0; i--) {
+                    const seed = goldSeeds[i];
+                    seed.y += seed.speed;
+                    seed.blinkTimer++;
+                    
+                    // Мигающий эффект
+                    ctx.globalAlpha = (seed.blinkTimer % 10 < 5) ? 1 : 0.7;
+                    ctx.drawImage(goldSeedImg, seed.x, seed.y, seed.width, seed.height);
+                    ctx.globalAlpha = 1;
+                    
+                    // Проверка столкновения
+                    if (
+                        chichi.x < seed.x + seed.width &&
+                        chichi.x + chichi.width > seed.x &&
+                        chichi.y < seed.y + seed.height &&
+                        chichi.y + chichi.height > seed.y
+                    ) {
+                        // Сбор золотой семечки
+                        goldSeeds.splice(i, 1);
+                        score += 5;
+                        goldSeedsCollected++;
+                        scoreElement.textContent = `Семечки: ${score}`;
+                        goldCounterElement.textContent = `Золотые: ${goldSeedsCollected}`;
+                        
+                        // Скачивание файла с вкусняшкой
+                        downloadTreat();
+                    } else if (seed.y > height) {
+                        // Удаление семечки
+                        goldSeeds.splice(i, 1);
+                    }
+                }
+                
                 // Продолжение игрового цикла
                 requestAnimationFrame(gameLoop);
             }
@@ -1713,38 +1769,14 @@
             startBtn.addEventListener('click', startGame);
         }
         
-        // Чат
-        document.addEventListener('DOMContentLoaded', function() {
+        // ================== УМНЫЙ ЧАТ С ЧИЧИ ==================
+        function initChat() {
             const chatMessages = document.getElementById('chatMessages');
             const chatInput = document.getElementById('chatInput');
             const sendMessageBtn = document.getElementById('sendMessageBtn');
             
-            // Генерация случайных сообщений
-            const phrases = [
-                "Привет! Как игра?",
-                "Чичи - лучший!",
-                "Кто-нибудь знает, сколько семечек в день можно давать корелле?",
-                "Я только что побил рекорд!",
-                "Как заставить Чичи перестать кричать по утрам?",
-                "У меня тоже есть корелла, его зовут Кеша!",
-                "Люблю эту игру!",
-                "Чичи такой милый на фотографиях!",
-                "Кто-нибудь хочет обменяться советами по уходу?",
-                "Мой корелла научился говорить 'привет'!",
-                "Как приучить птицу к рукам?",
-                "Смотрите, какое фото я сделал сегодня!",
-                "Чичи собирает семечки быстрее всех!",
-                "Какой у вас рекорд в игре?",
-                "Я обожаю попугаев!",
-                "Чичи - настоящая звезда!",
-                "Кто-нибудь знает хорошего ветеринара в Москве?",
-                "Как часто нужно купать кореллу?",
-                "Моя птица обожает яблоки!",
-                "Чичи, мы тебя любим!"
-            ];
-            
             // Функция добавления сообщения в чат
-            function addMessage(sender, content, isSent = false) {
+            window.addMessage = function(sender, content, isSent = false) {
                 const messageDiv = document.createElement('div');
                 messageDiv.classList.add('message');
                 messageDiv.classList.add(isSent ? 'sent' : 'received');
@@ -1762,19 +1794,92 @@
                 
                 chatMessages.appendChild(messageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
-            
-            // Генерация случайных сообщений
-            function generateRandomMessage() {
-                if (Math.random() > 0.7 && chatMessages.children.length < 100) {
-                    const randomName = ["Птицевод", "Любитель_птиц", "Корелла_Фан", "Чичи_Любитель", "Попугайщик"][Math.floor(Math.random() * 5)];
-                    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-                    addMessage(randomName, randomPhrase);
+            };
+
+            // Обработка вопросов для Чичи
+            function processQuestion(question) {
+                const lowerQ = question.toLowerCase();
+                
+                // Приветствия
+                if (lowerQ.includes('привет') || lowerQ.includes('здравствуй') || 
+                    lowerQ.includes('здравствуйте') || lowerQ.includes('hi') || 
+                    lowerQ.includes('hello')) {
+                    return "Привет! Я Чичи - самый милый корелла! Как твои дела?";
                 }
+                
+                // Вопрос о делах
+                if (lowerQ.includes('как дела') || lowerQ.includes('как ты') || 
+                    lowerQ.includes('как жизнь') || lowerQ.includes('как настроение')) {
+                    return "У меня все отлично! Только что клевал вкусные семечки. А у тебя?";
+                }
+                
+                // Вопросы о советах
+                if (lowerQ.includes('что посоветуешь') || lowerQ.includes('что посоветуете') || 
+                    lowerQ.includes('совет') || lowerQ.includes('посоветуй') || 
+                    lowerQ.includes('рекомендац')) {
+                    return "Советую тебе:\n1. Играть в мою игру и собирать семечки\n2. Подписаться на мой Телеграм канал\n3. Кормить корелл нежареными семечками\n4. Давать птичкам веточки для гнезд";
+                }
+                
+                // Вопросы о питании
+                if (lowerQ.includes('чем кормить') || lowerQ.includes('что ест') || 
+                    lowerQ.includes('питание') || lowerQ.includes('корм') || 
+                    lowerQ.includes('еда') || lowerQ.includes('кушать')) {
+                    return "Я обожаю:\n- Рис\n- Вареные яйца\n- Семена подсолнечника (не жареные!)\n- Овес\n- Бамбуковые зубочистки\n- Свежие овощи";
+                }
+                
+                // Вопросы об уходе
+                if (lowerQ.includes('уход') || lowerQ.includes('забо') || 
+                    lowerQ.includes('содержан') || lowerQ.includes('убирать')) {
+                    return "Важные правила ухода:\n1. Чистая вода каждый день\n2. Регулярная уборка клетки\n3. Общение 2-3 часа в день\n4. Возможность летать\n5. Игрушки для развлечения";
+                }
+                
+                // Вопросы об игре
+                if (lowerQ.includes('игра') || lowerQ.includes('игре') || 
+                    lowerQ.includes('управлен') || lowerQ.includes('правила') || 
+                    lowerQ.includes('как играть')) {
+                    return "В моей игре:\n← → - двигаться\nПробел или ↑ - прыгать\nСобирай семечки (1 очко)\nЗолотые семечки (5 очков) дарят мне вкусняшку!";
+                }
+                
+                // Вопросы о характере
+                if (lowerQ.includes('характер') || lowerQ.includes('нрав') || 
+                    lowerQ.includes('личность')) {
+                    return "Я немного капризный, но очень добрый! Люблю сидеть на руке и наблюдать за происходящим. Не люблю, когда меня беспокоят во время еды или сна.";
+                }
+                
+                // Вопросы о любимых занятиях
+                if (lowerQ.includes('чем занимаешься') || lowerQ.includes('любишь делать') || 
+                    lowerQ.includes('хобби') || lowerQ.includes('занят')) {
+                    return "Мои любимые занятия:\n1. Строить гнездо из веточек\n2. Смотреть в окно\n3. Пробовать новые вкусняшки\n4. Пугать кота (но только немного!)\n5. Играть с хозяином";
+                }
+                
+                // Прощания
+                if (lowerQ.includes('пока') || lowerQ.includes('до свидания') || 
+                    lowerQ.includes('прощай') || lowerQ.includes('bye')) {
+                    return "Пока! Возвращайся скорее поиграть со мной! Буду скучать!";
+                }
+                
+                // Общие позитивные фразы
+                if (lowerQ.includes('люблю') || lowerQ.includes('обожаю') || 
+                    lowerQ.includes('нравишься') || lowerQ.includes('симпатичн')) {
+                    return "И я тебя люблю! Ты самый лучший! Приходи ко мне в гости, угощу семечкой!";
+                }
+                
+                // Если не распознано - случайный ответ
+                const randomResponses = [
+                    "Чирик-чирик! Что ты сказал?",
+                    "Я больше люблю семечки, чем разговоры!",
+                    "Может лучше поиграем в игру?",
+                    "Извини, я занят - клюю вкусные семечки!",
+                    "Спроси что-нибудь о моей жизни или уходе за кореллами!",
+                    "Я не совсем понял вопрос... Может повторишь?",
+                    "Знаешь, у меня сегодня отличный день!",
+                    "Лучший совет - подпишись на мой Телеграм канал!",
+                    "Ух ты! Интересный вопрос! Но я пока не знаю ответа...",
+                    "Чирикаю тебе в ответ - приятного дня!"
+                ];
+                
+                return randomResponses[Math.floor(Math.random() * randomResponses.length)];
             }
-            
-            // Генерация сообщений каждые 10-30 секунд
-            setInterval(generateRandomMessage, 10000 + Math.random() * 20000);
             
             // Отправка сообщения
             function sendMessage() {
@@ -1785,20 +1890,11 @@
                     addMessage(sender, message, true);
                     chatInput.value = '';
                     
-                    // Автоматический ответ
+                    // Ответ Чичи
                     setTimeout(() => {
-                        if (message.toLowerCase().includes("привет")) {
-                            addMessage("Чичи", "Привет! Как твои успехи в игре?");
-                        } else if (message.toLowerCase().includes("семечк")) {
-                            addMessage("Птицевод", "Я только что собрал 30 семечек! А ты?");
-                        } else if (message.toLowerCase().includes("совет") || message.toLowerCase().includes("уход")) {
-                            addMessage("Опытный_птицевод", "Главное - правильное питание и регулярное общение!");
-                        } else {
-                            const randomResponse = phrases[Math.floor(Math.random() * phrases.length)];
-                            const randomName = ["Птицевод", "Любитель_птиц", "Корелла_Фан"][Math.floor(Math.random() * 3)];
-                            addMessage(randomName, randomResponse);
-                        }
-                    }, 1000 + Math.random() * 3000);
+                        const response = processQuestion(message);
+                        addMessage("Чичи", response);
+                    }, 1000 + Math.random() * 1000);
                 }
             }
             
@@ -1809,7 +1905,7 @@
                     sendMessage();
                 }
             });
-        });
+        }
     </script>
 </body>
 </html>
