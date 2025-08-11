@@ -8,7 +8,7 @@
     <style>
         :root {
             --primary: #FFD166;
-            --secondary: #06D6A0;
+            --secondary: #06D6A0; 
             --accent: #EF476F;
             --dark: #073B4C;
             --light: #F8F9FA;
@@ -839,6 +839,78 @@
             touch-action: manipulation;
         }
         
+        /* Стили для открытого мира */
+        .game-mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .game-mode-btn {
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: none;
+            background: var(--secondary);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(6, 214, 160, 0.4);
+        }
+        
+        .game-mode-btn.active {
+            background: var(--accent);
+            box-shadow: 0 4px 10px rgba(239, 71, 111, 0.6);
+        }
+        
+        .game-mode-btn:hover {
+            transform: translateY(-3px);
+        }
+        
+        .inventory {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .inventory-item {
+            width: 50px;
+            height: 50px;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            cursor: pointer;
+            background-size: cover;
+            transition: all 0.2s;
+        }
+        
+        .inventory-item.selected {
+            border-color: var(--accent);
+            transform: scale(1.1);
+        }
+        
+        .inventory-item:hover {
+            transform: scale(1.05);
+        }
+        
+        #buildBtn {
+            display: none;
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            font-size: 1.5rem;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+
         /* Стили для адаптивности */
         @media (max-width: 768px) {
             .menu-toggle {
@@ -1352,9 +1424,18 @@
         <div class="game-container">
             <div class="game-section">
                 <h2 class="game-title"><i class="fas fa-gamepad"></i> Игра</h2>
+                
+                <!-- Кнопки выбора режима -->
+                <div class="game-mode-selector">
+                    <button id="standardModeBtn" class="game-mode-btn active">Чичи и семечки</button>
+                    <button id="openWorldModeBtn" class="game-mode-btn">Открытый мир</button>
+                </div>
+                
                 <div class="game-canvas-container">
                     <canvas id="gameCanvas" width="800" height="500"></canvas>
                     <div id="swipe-area"></div>
+                    <!-- Кнопка строительства для мобильных -->
+                    <button id="buildBtn">🔨</button>
                 </div>
                 
                 <!-- Добавляем кнопки для мобильного управления -->
@@ -1382,6 +1463,15 @@
                     </div>
                     <button id="startGameBtn" class="btn btn-secondary">Начать игру</button>
                 </div>
+                
+                <!-- Инвентарь для открытого мира -->
+                <div id="inventoryContainer" class="inventory" style="display: none;">
+                    <div class="inventory-item selected" data-type="grass" style="background: #2E8B57;"></div>
+                    <div class="inventory-item" data-type="dirt" style="background: #8B4513;"></div>
+                    <div class="inventory-item" data-type="wood" style="background: url('https://i.postimg.cc/nLxvWqGr/2025-08-10-184656.png') center/cover;"></div>
+                    <div class="inventory-item" data-type="leaves" style="background: #3CB371;"></div>
+                </div>
+                
                 <div class="game-instructions">
                     <h3><i class="fas fa-info-circle"></i> Как играть?</h3>
                     <ul>
@@ -1390,6 +1480,7 @@
                         <li>Собирайте обычные семечки (1 очко)</li>
                         <li>Золотые семечки (5 очков) скачивают файл с вкусняшкой для Чичи!</li>
                         <li>Старайтесь собрать как можно больше за 60 секунд!</li>
+                        <li>В открытом мире: кликните/коснитесь экрана, чтобы построить блок</li>
                     </ul>
                 </div>
             </div>
@@ -1641,7 +1732,466 @@
             showPage(page);
         });
         
-        // ================== ИГРА С ЗОЛОТОЙ СЕМЕЧКОЙ И МОБИЛЬНЫМ УПРАВЛЕНИЕМ ==================
+        // ================== ИГРА С ОТКРЫТЫМ МИРОМ ==================
+        let currentGameMode = 'standard'; // 'standard' или 'open-world'
+        let gameActive = false;
+        let animationFrameId;
+        
+        // Переменные для открытого мира
+        let worldBlocks = [];
+        let trees = [];
+        let clouds = [];
+        let selectedBlockType = 'grass';
+        
+        // Глобальный объект для управления
+        let gameKeys = {
+            left: false,
+            right: false,
+            up: false
+        };
+        
+        // Функция для генерации мира
+        function generateWorld() {
+            // Очищаем предыдущий мир
+            worldBlocks = [];
+            trees = [];
+            clouds = [];
+            
+            // Генерируем землю
+            for (let i = 0; i < 20; i++) {
+                worldBlocks.push({
+                    x: i * 40,
+                    y: 460,
+                    width: 40,
+                    height: 40,
+                    type: 'dirt'
+                });
+                
+                // Добавляем траву сверху
+                worldBlocks.push({
+                    x: i * 40,
+                    y: 440,
+                    width: 40,
+                    height: 20,
+                    type: 'grass'
+                });
+            }
+            
+            // Добавляем деревья
+            for (let i = 0; i < 5; i++) {
+                const x = Math.random() * 700 + 50;
+                trees.push({
+                    x: x,
+                    y: 380,
+                    width: 80,
+                    height: 100,
+                });
+            }
+            
+            // Добавляем облака
+            for (let i = 0; i < 4; i++) {
+                clouds.push({
+                    x: Math.random() * 700,
+                    y: Math.random() * 100 + 20,
+                    width: 100,
+                    height: 60,
+                    speed: Math.random() * 0.5 + 0.2
+                });
+            }
+        }
+        
+        // Функция для переключения режимов игры
+        function switchGameMode(mode) {
+            if (currentGameMode === mode) return;
+            
+            // Останавливаем текущую игру
+            gameActive = false;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            
+            // Переключаем режим
+            currentGameMode = mode;
+            
+            // Обновляем UI
+            document.querySelectorAll('.game-mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            if (mode === 'standard') {
+                document.getElementById('standardModeBtn').classList.add('active');
+                document.querySelector('.game-stats').style.display = 'flex';
+                document.getElementById('inventoryContainer').style.display = 'none';
+                document.getElementById('buildBtn').style.display = 'none';
+            } else {
+                document.getElementById('openWorldModeBtn').classList.add('active');
+                document.querySelector('.game-stats').style.display = 'none';
+                document.getElementById('inventoryContainer').style.display = 'flex';
+                document.getElementById('buildBtn').style.display = 'block';
+                generateWorld();
+            }
+            
+            // Перезапускаем игру в новом режиме
+            initGame();
+        }
+        
+        // Обработчики кнопок выбора режима
+        document.getElementById('standardModeBtn').addEventListener('click', () => switchGameMode('standard'));
+        document.getElementById('openWorldModeBtn').addEventListener('click', () => switchGameMode('open-world'));
+        
+        // Обработчик выбора блока в инвентаре
+        document.querySelectorAll('.inventory-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.inventory-item').forEach(i => i.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedBlockType = this.dataset.type;
+            });
+        });
+        
+        // Настройка обработчиков управления
+        function setupControls() {
+            // Обработчики клавиш для ПК
+            window.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowLeft') gameKeys.left = true;
+                if (e.key === 'ArrowRight') gameKeys.right = true;
+                if (e.key === 'ArrowUp' || e.key === ' ') gameKeys.up = true;
+            });
+            
+            window.addEventListener('keyup', function(e) {
+                if (e.key === 'ArrowLeft') gameKeys.left = false;
+                if (e.key === 'ArrowRight') gameKeys.right = false;
+                if (e.key === 'ArrowUp' || e.key === ' ') gameKeys.up = false;
+            });
+            
+            // Элементы управления
+            const leftBtn = document.getElementById('left-btn');
+            const rightBtn = document.getElementById('right-btn');
+            const jumpBtn = document.getElementById('jump-btn');
+            const dpadLeft = document.getElementById('dpad-left');
+            const dpadRight = document.getElementById('dpad-right');
+            const dpadUp = document.getElementById('dpad-up');
+            const swipeArea = document.getElementById('swipe-area');
+            
+            // Обработчики для кнопок
+            if (leftBtn) {
+                leftBtn.addEventListener('touchstart', function(e) {
+                    gameKeys.left = true;
+                    e.preventDefault();
+                });
+                
+                leftBtn.addEventListener('touchend', function(e) {
+                    gameKeys.left = false;
+                    e.preventDefault();
+                });
+            }
+            
+            if (rightBtn) {
+                rightBtn.addEventListener('touchstart', function(e) {
+                    gameKeys.right = true;
+                    e.preventDefault();
+                });
+                
+                rightBtn.addEventListener('touchend', function(e) {
+                    gameKeys.right = false;
+                    e.preventDefault();
+                });
+            }
+            
+            if (jumpBtn) {
+                jumpBtn.addEventListener('touchstart', function(e) {
+                    gameKeys.up = true;
+                    e.preventDefault();
+                });
+                
+                jumpBtn.addEventListener('touchend', function(e) {
+                    gameKeys.up = false;
+                    e.preventDefault();
+                });
+            }
+            
+            // Обработчики для D-pad
+            if (dpadLeft) {
+                dpadLeft.addEventListener('touchstart', function(e) {
+                    gameKeys.left = true;
+                    e.preventDefault();
+                });
+                
+                dpadLeft.addEventListener('touchend', function(e) {
+                    gameKeys.left = false;
+                    e.preventDefault();
+                });
+            }
+            
+            if (dpadRight) {
+                dpadRight.addEventListener('touchstart', function(e) {
+                    gameKeys.right = true;
+                    e.preventDefault();
+                });
+                
+                dpadRight.addEventListener('touchend', function(e) {
+                    gameKeys.right = false;
+                    e.preventDefault();
+                });
+            }
+            
+            if (dpadUp) {
+                dpadUp.addEventListener('touchstart', function(e) {
+                    gameKeys.up = true;
+                    e.preventDefault();
+                });
+                
+                dpadUp.addEventListener('touchend', function(e) {
+                    gameKeys.up = false;
+                    e.preventDefault();
+                });
+            }
+            
+            // Обработчик свайпов
+            let touchStartX = 0;
+            let touchStartY = 0;
+            
+            if (swipeArea) {
+                swipeArea.addEventListener('touchstart', function(e) {
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    e.preventDefault();
+                });
+                
+                swipeArea.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
+                });
+                
+                swipeArea.addEventListener('touchend', function(e) {
+                    const touchEndX = e.changedTouches[0].clientX;
+                    const touchEndY = e.changedTouches[0].clientY;
+                    
+                    const diffX = touchEndX - touchStartX;
+                    const diffY = touchEndY - touchStartY;
+                    
+                    // Определяем направление свайпа
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        // Горизонтальный свайп
+                        if (diffX > 50) {
+                            // Свайп вправо
+                            gameKeys.right = true;
+                            setTimeout(() => gameKeys.right = false, 300);
+                        } else if (diffX < -50) {
+                            // Свайп влево
+                            gameKeys.left = true;
+                            setTimeout(() => gameKeys.left = false, 300);
+                        }
+                    } else {
+                        // Вертикальный свайп
+                        if (diffY < -50) {
+                            // Свайп вверх (прыжок)
+                            gameKeys.up = true;
+                            setTimeout(() => gameKeys.up = false, 100);
+                        }
+                    }
+                    
+                    e.preventDefault();
+                });
+            }
+            
+            // Предотвращаем стандартное поведение касаний
+            document.addEventListener('touchmove', function(e) {
+                if (e.target.closest('#mobile-controls') || e.target === swipeArea) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
+
+        // Функция для открытого мира
+        function startOpenWorldGame() {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Позиция Чичи
+            let chichi = {
+                x: width / 2 - 30,
+                y: height - 100,
+                width: 60,
+                height: 60,
+                speed: 5,
+                jumping: false,
+                jumpPower: 15,
+                gravity: 0.5,
+                velocityY: 0
+            };
+            
+            // Функция отрисовки мира
+            function drawWorld() {
+                // Рисуем небо
+                ctx.fillStyle = '#87CEEB';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Рисуем облака
+                clouds.forEach(cloud => {
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                    ctx.beginPath();
+                    ctx.arc(cloud.x, cloud.y, 20, 0, Math.PI * 2);
+                    ctx.arc(cloud.x + 25, cloud.y - 10, 25, 0, Math.PI * 2);
+                    ctx.arc(cloud.x + 50, cloud.y, 20, 0, Math.PI * 2);
+                    ctx.arc(cloud.x + 70, cloud.y - 5, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Рисуем деревья
+                trees.forEach(tree => {
+                    // Ствол
+                    ctx.fillStyle = '#8B4513';
+                    ctx.fillRect(tree.x + 30, tree.y + 40, 20, 60);
+                    
+                    // Листва
+                    ctx.fillStyle = '#2E8B57';
+                    ctx.beginPath();
+                    ctx.arc(tree.x + 40, tree.y + 30, 30, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(tree.x + 20, tree.y + 20, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(tree.x + 60, tree.y + 20, 25, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Рисуем блоки
+                worldBlocks.forEach(block => {
+                    if (block.type === 'grass') {
+                        ctx.fillStyle = '#2E8B57';
+                    } else if (block.type === 'dirt') {
+                        ctx.fillStyle = '#8B4513';
+                    } else if (block.type === 'wood') {
+                        ctx.fillStyle = '#8B4513';
+                    } else if (block.type === 'leaves') {
+                        ctx.fillStyle = '#3CB371';
+                    }
+                    ctx.fillRect(block.x, block.y, block.width, block.height);
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.strokeRect(block.x, block.y, block.width, block.height);
+                });
+                
+                // Рисуем Чичи
+                const chichiImg = new Image();
+                chichiImg.src = 'https://i.postimg.cc/L4DVw1LC/2025-08-10-225048.png';
+                ctx.drawImage(chichiImg, chichi.x, chichi.y, chichi.width, chichi.height);
+            }
+            
+            // Функция обновления мира
+            function updateWorld() {
+                // Обновляем облака
+                clouds.forEach(cloud => {
+                    cloud.x += cloud.speed;
+                    if (cloud.x > width) {
+                        cloud.x = -100;
+                    }
+                });
+                
+                // Обновляем позицию Чичи
+                if (gameKeys.left && chichi.x > 0) {
+                    chichi.x -= chichi.speed;
+                }
+                if (gameKeys.right && chichi.x + chichi.width < width) {
+                    chichi.x += chichi.speed;
+                }
+                
+                // Прыжок
+                if (gameKeys.up && !chichi.jumping) {
+                    chichi.jumping = true;
+                    chichi.velocityY = -chichi.jumpPower;
+                }
+                
+                // Гравитация
+                if (chichi.jumping) {
+                    chichi.y += chichi.velocityY;
+                    chichi.velocityY += chichi.gravity;
+                    
+                    // Проверка приземления
+                    if (chichi.y >= height - 100) {
+                        chichi.y = height - 100;
+                        chichi.jumping = false;
+                        chichi.velocityY = 0;
+                    }
+                }
+            }
+            
+            // Игровой цикл для открытого мира
+            function gameLoop() {
+                if (!gameActive) return;
+                
+                // Очищаем холст
+                ctx.clearRect(0, 0, width, height);
+                
+                // Обновляем и рисуем мир
+                updateWorld();
+                drawWorld();
+                
+                // Продолжаем цикл
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+            
+            // Запускаем игру
+            gameActive = true;
+            gameLoop();
+            
+            // Обработчик строительства
+            canvas.addEventListener('click', function(e) {
+                if (!gameActive) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                // Добавляем блок в указанное место
+                const blockSize = 40;
+                const blockX = Math.floor(x / blockSize) * blockSize;
+                const blockY = Math.floor(y / blockSize) * blockSize;
+                
+                // Проверяем, нет ли блока в этой позиции
+                const blockExists = worldBlocks.some(block => 
+                    block.x === blockX && block.y === blockY
+                );
+                
+                if (!blockExists) {
+                    worldBlocks.push({
+                        x: blockX,
+                        y: blockY,
+                        width: blockSize,
+                        height: blockSize,
+                        type: selectedBlockType
+                    });
+                }
+            });
+            
+            // Обработчик строительства для мобильных
+            document.getElementById('buildBtn').addEventListener('click', function() {
+                if (!gameActive) return;
+                
+                // Добавляем блок перед Чичи
+                const blockSize = 40;
+                const blockX = chichi.x + chichi.width;
+                const blockY = chichi.y + chichi.height - blockSize;
+                
+                // Проверяем, нет ли блока в этой позиции
+                const blockExists = worldBlocks.some(block => 
+                    block.x === blockX && block.y === blockY
+                );
+                
+                if (!blockExists) {
+                    worldBlocks.push({
+                        x: blockX,
+                        y: blockY,
+                        width: blockSize,
+                        height: blockSize,
+                        type: selectedBlockType
+                    });
+                }
+            });
+        }
+        
+        // Обновленная функция initGame
         function initGame() {
             const canvas = document.getElementById('gameCanvas');
             const ctx = canvas.getContext('2d');
@@ -1666,7 +2216,7 @@
             goldSeedImg.src = 'https://i.postimg.cc/k4Nww8YF/2025-08-10-211147.png';
             
             // Переменные игры
-            let gameActive = false;
+            gameActive = false;
             let score = 0;
             let goldSeedsCollected = 0;
             let timeLeft = 60;
@@ -1689,167 +2239,8 @@
             let seeds = [];
             let goldSeeds = [];
             
-            // Клавиши управления
-            let keys = {
-                left: false,
-                right: false,
-                up: false
-            };
-            
-            // Обработчики клавиш для ПК
-            window.addEventListener('keydown', function(e) {
-                if (e.key === 'ArrowLeft') keys.left = true;
-                if (e.key === 'ArrowRight') keys.right = true;
-                if (e.key === 'ArrowUp' || e.key === ' ') keys.up = true;
-            });
-            
-            window.addEventListener('keyup', function(e) {
-                if (e.key === 'ArrowLeft') keys.left = false;
-                if (e.key === 'ArrowRight') keys.right = false;
-                if (e.key === 'ArrowUp' || e.key === ' ') keys.up = false;
-            });
-            
-            // ================== МОБИЛЬНОЕ УПРАВЛЕНИЕ ==================
-            
-            // Элементы управления
-            const leftBtn = document.getElementById('left-btn');
-            const rightBtn = document.getElementById('right-btn');
-            const jumpBtn = document.getElementById('jump-btn');
-            const dpadLeft = document.getElementById('dpad-left');
-            const dpadRight = document.getElementById('dpad-right');
-            const dpadUp = document.getElementById('dpad-up');
-            const dpadDown = document.getElementById('dpad-down');
-            const swipeArea = document.getElementById('swipe-area');
-            
-            // Обработчики для кнопок
-            if (leftBtn) {
-                leftBtn.addEventListener('touchstart', function(e) {
-                    keys.left = true;
-                    e.preventDefault();
-                });
-                
-                leftBtn.addEventListener('touchend', function(e) {
-                    keys.left = false;
-                    e.preventDefault();
-                });
-            }
-            
-            if (rightBtn) {
-                rightBtn.addEventListener('touchstart', function(e) {
-                    keys.right = true;
-                    e.preventDefault();
-                });
-                
-                rightBtn.addEventListener('touchend', function(e) {
-                    keys.right = false;
-                    e.preventDefault();
-                });
-            }
-            
-            if (jumpBtn) {
-                jumpBtn.addEventListener('touchstart', function(e) {
-                    if (!chichi.jumping) {
-                        keys.up = true;
-                    }
-                    e.preventDefault();
-                });
-                
-                jumpBtn.addEventListener('touchend', function(e) {
-                    keys.up = false;
-                    e.preventDefault();
-                });
-            }
-            
-            // Обработчики для D-pad
-            if (dpadLeft) {
-                dpadLeft.addEventListener('touchstart', function(e) {
-                    keys.left = true;
-                    e.preventDefault();
-                });
-                
-                dpadLeft.addEventListener('touchend', function(e) {
-                    keys.left = false;
-                    e.preventDefault();
-                });
-            }
-            
-            if (dpadRight) {
-                dpadRight.addEventListener('touchstart', function(e) {
-                    keys.right = true;
-                    e.preventDefault();
-                });
-                
-                dpadRight.addEventListener('touchend', function(e) {
-                    keys.right = false;
-                    e.preventDefault();
-                });
-            }
-            
-            if (dpadUp) {
-                dpadUp.addEventListener('touchstart', function(e) {
-                    if (!chichi.jumping) {
-                        keys.up = true;
-                    }
-                    e.preventDefault();
-                });
-                
-                dpadUp.addEventListener('touchend', function(e) {
-                    keys.up = false;
-                    e.preventDefault();
-                });
-            }
-            
-            // Обработчик свайпов
-            let touchStartX = 0;
-            let touchStartY = 0;
-            
-            swipeArea.addEventListener('touchstart', function(e) {
-                touchStartX = e.touches[0].clientX;
-                touchStartY = e.touches[0].clientY;
-                e.preventDefault();
-            });
-            
-            swipeArea.addEventListener('touchmove', function(e) {
-                e.preventDefault();
-            });
-            
-            swipeArea.addEventListener('touchend', function(e) {
-                const touchEndX = e.changedTouches[0].clientX;
-                const touchEndY = e.changedTouches[0].clientY;
-                
-                const diffX = touchEndX - touchStartX;
-                const diffY = touchEndY - touchStartY;
-                
-                // Определяем направление свайпа
-                if (Math.abs(diffX) > Math.abs(diffY)) {
-                    // Горизонтальный свайп
-                    if (diffX > 50) {
-                        // Свайп вправо
-                        keys.right = true;
-                        setTimeout(() => keys.right = false, 300);
-                    } else if (diffX < -50) {
-                        // Свайп влево
-                        keys.left = true;
-                        setTimeout(() => keys.left = false, 300);
-                    }
-                } else {
-                    // Вертикальный свайп
-                    if (diffY < -50 && !chichi.jumping) {
-                        // Свайп вверх (прыжок)
-                        keys.up = true;
-                        setTimeout(() => keys.up = false, 100);
-                    }
-                }
-                
-                e.preventDefault();
-            });
-            
-            // Предотвращаем стандартное поведение касаний
-            document.addEventListener('touchmove', function(e) {
-                if (e.target.closest('#mobile-controls') || e.target === swipeArea) {
-                    e.preventDefault();
-                }
-            }, { passive: false });
+            // Настройка управления
+            setupControls();
             
             // Функция для скачивания файла с вкусняшкой
             function downloadTreat() {
@@ -1931,15 +2322,15 @@
                 }
                 
                 // Обновление позиции Чичи
-                if (keys.left && chichi.x > 0) {
+                if (gameKeys.left && chichi.x > 0) {
                     chichi.x -= chichi.speed;
                 }
-                if (keys.right && chichi.x + chichi.width < width) {
+                if (gameKeys.right && chichi.x + chichi.width < width) {
                     chichi.x += chichi.speed;
                 }
                 
                 // Прыжок
-                if (keys.up && !chichi.jumping) {
+                if (gameKeys.up && !chichi.jumping) {
                     chichi.jumping = true;
                     chichi.velocityY = -chichi.jumpPower;
                 }
@@ -2047,6 +2438,11 @@
             
             // Обработчик кнопки начала игры
             startBtn.addEventListener('click', startGame);
+            
+            // Запускаем открытый мир, если выбран этот режим
+            if (currentGameMode === 'open-world') {
+                startOpenWorldGame();
+            }
         }
         
         // ================== УМНЫЙ ЧАТ С ЧИЧИ (РАСШИРЕННЫЙ) ==================
@@ -2165,7 +2561,7 @@
                 
                 // Вопросы о полётах
                 if (lowerQ.includes('летать') || lowerQ.includes('полёты') || 
-                    lowerQ.includes('крылья')) {
+                    lowerQ.includes(' крылья')) {
                     return "Обожаю летать! Хотя в квартире не очень много места, я люблю делать круги по комнате. Это так здорово - чувствовать воздух под крыльями!";
                 }
                 
